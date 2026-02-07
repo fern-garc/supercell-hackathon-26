@@ -1,21 +1,23 @@
 class Environment {
     constructor(scene) {
         this.scene = scene;
+        this.collidables = [];
         this.createEnvironment();
     }
 
     createEnvironment() {
         // Floor
-        const floorGeometry = new THREE.PlaneGeometry(50, 50);
+        const floorGeometry = new THREE.BoxGeometry(50, 0.1, 50);
         const floorMaterial = new THREE.MeshStandardMaterial({
             color: 0x2a1a1a,
             roughness: 0.8,
             metalness: 0.2
         });
         const floor = new THREE.Mesh(floorGeometry, floorMaterial);
-        floor.rotation.x = -Math.PI / 2;
+        floor.position.y = -0.05; // Top surface at y=0
         floor.receiveShadow = true;
         this.scene.add(floor);
+        this.collidables.push(floor);
 
         // Walls - Create a room
         this.createWall(0, 2.5, -25, 50, 5, 0.5, 0x3a2a2a); // Back wall
@@ -24,24 +26,28 @@ class Environment {
         this.createWall(25, 2.5, 0, 0.5, 5, 50, 0x3a2a2a);  // Right wall
 
         // Ceiling
-        const ceilingGeometry = new THREE.PlaneGeometry(50, 50);
+        const ceilingGeometry = new THREE.BoxGeometry(50, 0.1, 50);
         const ceilingMaterial = new THREE.MeshStandardMaterial({
             color: 0x1a1a1a,
             roughness: 0.9
         });
         const ceiling = new THREE.Mesh(ceilingGeometry, ceilingMaterial);
-        ceiling.rotation.x = Math.PI / 2;
-        ceiling.position.y = 5;
+        ceiling.position.y = 5.05; // Bottom surface at y=5
         this.scene.add(ceiling);
+        this.collidables.push(ceiling);
 
         // Add some decorative elements
         this.addPillars();
 
         // Lighting
         this.setupLighting();
+        // this.setupTestingLighting();
 
         // Fog for atmosphere
         this.scene.fog = new THREE.Fog(0x000000, 1, 40);
+
+        // Force update world matrices for collision detection
+        this.scene.updateMatrixWorld(true);
     }
 
     createWall(x, y, z, width, height, depth, color) {
@@ -56,6 +62,7 @@ class Environment {
         wall.castShadow = true;
         wall.receiveShadow = true;
         this.scene.add(wall);
+        this.collidables.push(wall);
     }
 
     addPillars() {
@@ -77,16 +84,23 @@ class Environment {
             pillar.castShadow = true;
             pillar.receiveShadow = true;
             this.scene.add(pillar);
+            this.collidables.push(pillar);
         });
+    }
+
+    setupTestingLighting() {
+        const brightLight = new THREE.PointLight(0xffffff, 10, 100);
+        brightLight.position.set(0, 10, 0);
+        this.scene.add(brightLight);
     }
 
     setupLighting() {
         // Ambient light (very dim for spooky atmosphere)
-        const ambientLight = new THREE.AmbientLight(0x404040, 0.3);
+        const ambientLight = new THREE.AmbientLight(0x404040, 0.1);
         this.scene.add(ambientLight);
 
         // Directional light (moonlight effect)
-        const directionalLight = new THREE.DirectionalLight(0x8080ff, 0.4);
+        const directionalLight = new THREE.DirectionalLight(0x8080ff, 0.2);
         directionalLight.position.set(10, 20, 10);
         directionalLight.castShadow = true;
         directionalLight.shadow.camera.left = -30;
@@ -96,11 +110,11 @@ class Environment {
         this.scene.add(directionalLight);
 
         // Point lights for eerie glow
-        const pointLight1 = new THREE.PointLight(0xff4400, 1, 20);
+        const pointLight1 = new THREE.PointLight(0xff4400, 0.5, 15);
         pointLight1.position.set(-10, 3, -10);
         this.scene.add(pointLight1);
 
-        const pointLight2 = new THREE.PointLight(0x4400ff, 1, 20);
+        const pointLight2 = new THREE.PointLight(0x4400ff, 0.5, 15);
         pointLight2.position.set(10, 3, 10);
         this.scene.add(pointLight2);
     }

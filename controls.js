@@ -11,7 +11,11 @@ class FirstPersonControls {
 
         // Movement settings
         this.movementSpeed = 10.0;
+        this.jumpStrength = 8.0;
+        this.gravity = 25.0;
         this.velocity = new THREE.Vector3();
+        this.velocityY = 0;
+        this.isGrounded = false;
         this.direction = new THREE.Vector3();
 
         // Mouse look settings
@@ -22,6 +26,14 @@ class FirstPersonControls {
 
         // Pointer lock
         this.isLocked = false;
+
+        // Flashlight toggle callback
+        this.onFlashlightToggle = null;
+
+        // Collision detection
+        this.collidables = [];
+        this.playerRadius = 0.5;
+        this.playerHeight = 1.8;
 
         this.init();
     }
@@ -66,6 +78,15 @@ class FirstPersonControls {
             case 'KeyD':
             case 'ArrowRight':
                 this.moveRight = true;
+                break;
+            case 'KeyF':
+                if (this.onFlashlightToggle) this.onFlashlightToggle();
+                break;
+            case 'Space':
+                if (this.isGrounded) {
+                    this.velocityY = this.jumpStrength;
+                    this.isGrounded = false;
+                }
                 break;
         }
     }
@@ -119,37 +140,93 @@ class FirstPersonControls {
 
         const moveSpeed = this.movementSpeed * delta;
 
+        // Apply gravity
+        if (!this.isGrounded) {
+            this.velocityY -= this.gravity * delta;
+        }
+
         // Get forward and right vectors from camera
         const forward = new THREE.Vector3();
         const right = new THREE.Vector3();
 
         this.camera.getWorldDirection(forward);
-        forward.y = 0; // Keep movement on horizontal plane
+        forward.y = 0;
         forward.normalize();
 
         right.crossVectors(forward, new THREE.Vector3(0, 1, 0));
         right.normalize();
 
-        // Calculate movement
+        // Calculate horizontal movement
         const movement = new THREE.Vector3();
+        if (this.moveForward) movement.add(forward.multiplyScalar(moveSpeed));
+        if (this.moveBackward) movement.add(forward.multiplyScalar(-moveSpeed));
+        if (this.moveRight) movement.add(right.multiplyScalar(moveSpeed));
+        if (this.moveLeft) movement.add(right.multiplyScalar(-moveSpeed));
 
-        if (this.moveForward) {
-            movement.add(forward.multiplyScalar(moveSpeed));
-        }
-        if (this.moveBackward) {
-            movement.add(forward.multiplyScalar(-moveSpeed));
-        }
-        if (this.moveRight) {
-            movement.add(right.multiplyScalar(moveSpeed));
-        }
-        if (this.moveLeft) {
-            movement.add(right.multiplyScalar(-moveSpeed));
+        // Apply horizontal movement with collision detection
+        const nextPosition = this.camera.position.clone();
+
+        // Try X movement
+        nextPosition.x += movement.x;
+        if (!this.checkCollisions(nextPosition)) {
+            this.camera.position.x = nextPosition.x;
+        } else {
+            nextPosition.x = this.camera.position.x;
         }
 
-        // Apply movement
-        this.camera.position.add(movement);
+        // Try Z movement
+        nextPosition.z += movement.z;
+        if (!this.checkCollisions(nextPosition)) {
+            this.camera.position.z = nextPosition.z;
+        } else {
+            nextPosition.z = this.camera.position.z;
+        }
 
-        // Keep camera at eye level
-        this.camera.position.y = 1.6;
+        // Apply vertical movement (jumping/gravity)
+        const deltaY = this.velocityY * delta;
+        nextPosition.y = this.camera.position.y + deltaY;
+
+        if (!this.checkCollisions(nextPosition)) {
+            this.camera.position.y = nextPosition.y;
+            this.isGrounded = false;
+        } else {
+            // Collision detected in Y axis
+            if (this.velocityY < 0) {
+                // Falling and hit something (floor)
+                this.isGrounded = true;
+                this.velocityY = 0;
+            } else if (this.velocityY > 0) {
+                // Jumping and hit something (ceiling)
+                this.velocityY = 0;
+            }
+        }
+
+        // Safety floor at y=0 (eye level y=1.6)
+        if (this.camera.position.y < 1.6) {
+            this.camera.position.y = 1.6;
+            this.velocityY = 0;
+            this.isGrounded = true;
+        }
+    }
+
+    checkCollisions(position) {
+        // Player bounding box (centered at position)
+        const playerBox = new THREE.Box3().setFromCenterAndSize(
+            new THREE.Vector3(position.x, position.y, position.z),
+            new THREE.Vector3(this.playerRadius * 2, this.playerHeight, this.playerRadius * 2)
+        );
+
+        for (const object of this.collidables) {
+            // Use cached or compute world bounding box
+            if (!object.userData.boundingBox) {
+                if (!object.geometry.boundingBox) object.geometry.computeBoundingBox();
+                object.userData.boundingBox = new THREE.Box3().copy(object.geometry.boundingBox).applyMatrix4(object.matrixWorld);
+            }
+
+            if (playerBox.intersectsBox(object.userData.boundingBox)) {
+                return true;
+            }
+        }
+        return false;
     }
 }

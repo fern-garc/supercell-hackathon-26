@@ -6,6 +6,7 @@ class Game {
         this.renderer = null;
         this.controls = null;
         this.environment = null;
+        this.flashlight = null;
         this.clock = new THREE.Clock();
 
         this.init();
@@ -39,8 +40,16 @@ class Game {
         // Controls
         this.controls = new FirstPersonControls(this.camera, this.canvas);
 
+        // Flashlight (initialized before environment so it can be toggled by controls)
+        this.flashlight = new Flashlight(this.camera);
+        this.controls.onFlashlightToggle = () => this.flashlight.toggle();
+
         // Environment
         this.environment = new Environment(this.scene);
+        this.controls.collidables = this.environment.collidables;
+
+        // Add camera to scene
+        this.scene.add(this.camera);
 
         // Handle window resize
         window.addEventListener('resize', () => this.onWindowResize());

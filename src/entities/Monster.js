@@ -11,9 +11,14 @@ class Monster {
         this.mesh = this.createMesh();
         this.scene.add(this.mesh);
 
-        this.speed = 3.0;
-        this.detectionRange = 15.0;
-        this.killRange = 1.5;
+        this.huntSpeed = 5.0;
+        this.searchSpeed = 7.0;
+        this.chaseSpeed = 8.0;
+        this.speed = this.huntSpeed;
+
+        this.searchRange = 22.0;
+        this.chaseRange = 8.0;
+        this.killRange = 1.8;
 
         // Wandering state
         this.wanderDirection = new THREE.Vector3(1, 0, 0);
@@ -22,7 +27,8 @@ class Monster {
         this.position = new THREE.Vector3();
         this.resetPosition();
 
-        this.state = 'wandering'; // wandering, chasing
+        this.state = 'hunting'; // hunting, searching, chasing
+        this.timeSinceLastSeen = 0;
         this.targetNode = null;
         this.path = [];
     }
@@ -82,25 +88,41 @@ class Monster {
     }
 
     resetPosition() {
-        // Start monster in a valid maze cell
+        // Start monster in a valid maze cell roughly 22m away from player
         const cellSize = 4;
         const gridSize = 21;
         let foundValidPosition = false;
+        let attempts = 0;
 
         if (this.maze && this.maze.grid) {
-            while (!foundValidPosition) {
+            while (!foundValidPosition && attempts < 100) {
+                attempts++;
                 const rx = Math.floor(Math.random() * gridSize);
                 const rz = Math.floor(Math.random() * gridSize);
 
                 if (!this.maze.grid[rz][rx]) {
                     const worldX = (rx - gridSize / 2) * cellSize + cellSize / 2;
                     const worldZ = (rz - gridSize / 2) * cellSize + cellSize / 2;
-                    this.mesh.position.set(worldX, 1, worldZ);
-                    foundValidPosition = true;
+                    const tempPos = new THREE.Vector3(worldX, 1, worldZ);
+
+                    // Check distance to player camera
+                    const distToPlayer = tempPos.distanceTo(this.playerCamera.position);
+
+                    // Aim for roughly 22m
+                    if (distToPlayer > 18 && distToPlayer < 26) {
+                        this.mesh.position.copy(tempPos);
+                        foundValidPosition = true;
+                    }
+
+                    // Fallback to just far away if we can't find perfect distance
+                    if (attempts > 90 && distToPlayer > 15) {
+                        this.mesh.position.copy(tempPos);
+                        foundValidPosition = true;
+                    }
                 }
             }
         } else {
-            this.mesh.position.set(20, 1, 20);
+            this.mesh.position.set(22, 1, 22);
         }
     }
 
@@ -129,24 +151,48 @@ class Monster {
         }
 
         const dist = this.mesh.position.distanceTo(playerPos);
+        const hasLoS = this.hasLineOfSight(playerPos);
 
-        // State transitions
-        if (dist < this.detectionRange) {
+        // State Machine logic with Line of Sight and Time-based Persistence
+        if (hasLoS) {
+            // Reset timer and enter/stay in chase if seen - distance doesn't matter
             this.state = 'chasing';
-        } else {
-            this.state = 'wandering';
+            this.timeSinceLastSeen = 0;
+        } else if (this.state === 'chasing') {
+            // If we are chasing but lost sight, start the persistence timer
+            this.timeSinceLastSeen += delta;
+
+            // Only revert after 5 seconds of being unseen
+            if (this.timeSinceLastSeen > 5.0) {
+                this.state = 'searching';
+            }
         }
 
+        // Behavior based on state
         if (this.state === 'chasing') {
+            this.speed = this.chaseSpeed;
             this.chase(delta, playerPos);
 
-            // Play heartbeat based on proximity
+            // Intense heartbeat during chase
+            if (audioManager && Math.random() < 0.1) {
+                audioManager.playGlobal('heartbeat', 1.0);
+            }
+        } else if (dist > this.searchRange) {
+            // FAR & UNSEEN: Target the player directly but steadily
+            this.state = 'hunting';
+            this.speed = this.huntSpeed;
+            this.chase(delta, playerPos);
+        } else {
+            // WITHIN SEARCH RANGE & UNSEEN: Lose lock and search frantically
+            this.state = 'searching';
+            this.speed = this.searchSpeed;
+            this.wander(delta);
+
+            // Play heartbeat based on proximity (starts getting louder)
             if (audioManager && Math.random() < 0.05) {
-                const volume = Math.max(0, 1 - (dist / this.detectionRange));
+                const volume = Math.max(0, 1 - (dist / this.searchRange));
                 audioManager.playGlobal('heartbeat', volume * 0.8);
             }
-        } else {
-            this.wander(delta);
         }
 
         // Check for kill
@@ -158,7 +204,22 @@ class Monster {
     chase(delta, playerPos) {
         const dir = new THREE.Vector3().subVectors(playerPos, this.mesh.position).normalize();
         dir.y = 0;
-        this.mesh.position.add(dir.multiplyScalar(this.speed * delta));
+
+        const moveStep = dir.multiplyScalar(this.speed * delta);
+
+        // Try to move in X and Z separately to allow sliding along walls
+        const nextPosX = this.mesh.position.clone();
+        nextPosX.x += moveStep.x;
+        if (!this.checkMazeCollision(nextPosX)) {
+            this.mesh.position.x = nextPosX.x;
+        }
+
+        const nextPosZ = this.mesh.position.clone();
+        nextPosZ.z += moveStep.z;
+        if (!this.checkMazeCollision(nextPosZ)) {
+            this.mesh.position.z = nextPosZ.z;
+        }
+
         this.mesh.lookAt(playerPos.x, 1, playerPos.z);
     }
 
@@ -169,11 +230,18 @@ class Monster {
             const angles = [0, Math.PI / 2, Math.PI, Math.PI * 1.5];
             const angle = angles[Math.floor(Math.random() * angles.length)];
             this.wanderDirection.set(Math.cos(angle), 0, Math.sin(angle));
-            this.wanderTimer = 2 + Math.random() * 4;
+
+            // Searching is frantic when the monster is in range
+            if (this.state === 'searching') {
+                this.wanderTimer = 0.4 + Math.random() * 0.8;
+            } else {
+                this.wanderTimer = 2 + Math.random() * 4;
+            }
         }
 
-        // Move in wander direction but slower than chase
-        const moveStep = this.wanderDirection.clone().multiplyScalar(this.speed * 0.4 * delta);
+        // Move in wander direction
+        const moveScalar = this.state === 'searching' ? 1.2 : 0.4;
+        const moveStep = this.wanderDirection.clone().multiplyScalar(this.speed * moveScalar * delta);
         const nextPos = this.mesh.position.clone().add(moveStep);
 
         if (!this.checkMazeCollision(nextPos)) {
@@ -187,17 +255,67 @@ class Monster {
         }
     }
 
+    hasLineOfSight(playerPos) {
+        if (!window.gameInstance || !window.gameInstance.environment) return false;
+
+        // Raycast from monster chest to player camera
+        const start = this.mesh.position.clone();
+        start.y = 1.0;
+
+        const direction = new THREE.Vector3().subVectors(playerPos, start).normalize();
+        const distToPlayer = start.distanceTo(playerPos);
+
+        const raycaster = new THREE.Raycaster(start, direction, 0, distToPlayer);
+
+        // Check static walls (environment.collidables)
+        const intersects = raycaster.intersectObjects(window.gameInstance.environment.collidables, true);
+
+        // If no walls hit before player, we have LoS
+        return intersects.length === 0;
+    }
+
     checkMazeCollision(pos) {
         if (!this.maze || !this.maze.grid) return false;
 
         const cellSize = 4;
         const gridSize = 21;
+        const radius = 0.6; // Monster's physical radius
 
-        const gridX = Math.floor(pos.x / cellSize + gridSize / 2);
-        const gridZ = Math.floor(pos.z / cellSize + gridSize / 2);
+        // Check 5 points (center and cardinal edges) to ensure volume doesn't clip
+        const testPoints = [
+            { x: pos.x, z: pos.z },
+            { x: pos.x + radius, z: pos.z + radius },
+            { x: pos.x + radius, z: pos.z - radius },
+            { x: pos.x - radius, z: pos.z + radius },
+            { x: pos.x - radius, z: pos.z - radius }
+        ];
 
-        if (gridX < 0 || gridX >= gridSize || gridZ < 0 || gridZ >= gridSize) return true;
-        return this.maze.grid[gridZ][gridX];
+        for (const p of testPoints) {
+            const gridX = Math.floor(p.x / cellSize + gridSize / 2);
+            const gridZ = Math.floor(p.z / cellSize + gridSize / 2);
+
+            if (gridX < 0 || gridX >= gridSize || gridZ < 0 || gridZ >= gridSize) return true;
+
+            // Check static maze wall
+            if (this.maze.grid[gridZ][gridX]) return true;
+        }
+
+        // Check dynamic walls (doors/secret passages)
+        if (window.gameInstance && window.gameInstance.environment) {
+            const monsterBox = new THREE.Box3().setFromCenterAndSize(
+                pos,
+                new THREE.Vector3(radius * 2, 2, radius * 2)
+            );
+
+            for (const dWall of window.gameInstance.environment.dynamicWalls) {
+                const wallBox = dWall.getCollisionBox();
+                if (wallBox && monsterBox.intersectsBox(wallBox)) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 
     killPlayer(audioManager) {
@@ -205,9 +323,9 @@ class Monster {
             audioManager.playGlobal('game-over', 1.0);
         }
         console.log("PLAYER CAUGHT");
-        // In a real game, trigger UI and restart
-        if (window.confirm("The Mansion claimed you. Restart?")) {
-            window.location.reload();
+
+        if (window.gameInstance) {
+            window.gameInstance.onPlayerDeath();
         }
     }
 }

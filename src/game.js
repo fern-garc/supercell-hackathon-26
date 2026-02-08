@@ -9,6 +9,7 @@ class Game {
         this.flashlight = null;
         this.monster = null;
         this.crystalBall = null;
+        this.book = null; // Added this.book reference
         this.audio = null;
         this.clock = new THREE.Clock();
         this.isGameStarted = false;
@@ -51,6 +52,11 @@ class Game {
 
             if (!wasStarted) {
                 this.animate();
+            }
+
+            // Unlock audio context
+            if (this.audio) {
+                this.audio.resume();
             }
 
             // Auto-lock mouse
@@ -102,6 +108,10 @@ class Game {
         this.environment = new Environment(this.scene);
         this.controls.collidables = this.environment.collidables;
 
+        // Book (Escape Item) - Instantiated after environment
+        this.book = new Book(this.scene, this.environment.maze);
+        this.controls.onInteract = () => this.handleInteraction();
+
         // Monster
         this.monster = new Monster(this.scene, this.environment.maze, this.camera);
 
@@ -149,6 +159,7 @@ class Game {
         requestAnimationFrame(() => this.animate());
 
         const delta = this.clock.getDelta();
+        const time = this.clock.getElapsedTime(); // Get elapsed time for item updates
 
         // Update environment (dynamic walls)
         if (this.environment) {
@@ -156,7 +167,6 @@ class Game {
         }
 
         // Update items (hand sway, etc)
-        const time = this.clock.getElapsedTime();
         if (this.flashlight) this.flashlight.update(time, delta);
         if (this.crystalBall) this.crystalBall.update(time, delta);
 
@@ -167,6 +177,13 @@ class Game {
         if (this.monster) {
             this.monster.update(delta, this.camera.position, this.audio);
         }
+
+        // Update book
+        if (this.book) {
+            this.book.update(time); // Using 'time' for consistency with other item updates
+        }
+
+        this.checkInteraction();
 
         // Random creepy sounds
         if (this.audio) {
@@ -185,6 +202,128 @@ class Game {
 
         // Render
         this.renderer.render(this.scene, this.camera);
+    }
+
+    handleInteraction() {
+        if (!this.book || this.book.isCollected) return;
+
+        // Raycast from camera to check if looking at book
+        const raycaster = new THREE.Raycaster();
+        raycaster.setFromCamera(new THREE.Vector2(0, 0), this.camera);
+
+        // Interaction reach (3 meters)
+        raycaster.far = 3;
+
+        const intersects = raycaster.intersectObject(this.book.group, true);
+
+        if (intersects.length > 0) {
+            this.book.collect();
+            console.log("BOOK COLLECTED! Escape is now possible.");
+
+            // Notification
+            this.showNotification("You found the Ritual Book!");
+
+            // Sequence for ending
+            setTimeout(() => {
+                this.showEnding();
+            }, 2000);
+        }
+    }
+
+    checkInteraction() {
+        if (!this.book || this.book.isCollected || !this.isGameStarted) return;
+
+        const prompt = document.getElementById('interaction-prompt');
+
+        const raycaster = new THREE.Raycaster();
+        raycaster.setFromCamera(new THREE.Vector2(0, 0), this.camera);
+        raycaster.far = 3;
+
+        const intersects = raycaster.intersectObject(this.book.group, true);
+
+        if (intersects.length > 0) {
+            prompt.classList.remove('hidden');
+        } else {
+            prompt.classList.add('hidden');
+        }
+    }
+
+    showEnding() {
+        const endingScreen = document.getElementById('ending-screen');
+        const gameModal = document.getElementById('game-modal');
+        const uiContainer = document.getElementById('ui-container');
+
+        if (gameModal) gameModal.classList.add('hidden');
+        endingScreen.classList.remove('hidden');
+        uiContainer.classList.remove('hidden');
+
+        // Unlock cursor
+        document.exitPointerLock();
+        this.controls.isLocked = false;
+
+        // Restart logic
+        const replayBtn = document.getElementById('replay-button');
+        if (replayBtn) {
+            replayBtn.onclick = () => window.location.reload();
+        }
+    }
+
+    onPlayerDeath() {
+        if (!this.isGameStarted) return;
+        this.isGameStarted = false;
+
+        const jumpscare = document.getElementById('jumpscare-overlay');
+        const deathScreen = document.getElementById('death-screen');
+        const uiContainer = document.getElementById('ui-container');
+        const gameModal = document.getElementById('game-modal');
+
+        // 1. Show Jumpscare Immediately
+        jumpscare.classList.remove('hidden');
+
+        // 2. Clear other UI
+        if (gameModal) gameModal.classList.add('hidden');
+
+        // 3. Show Death Screen after a delay
+        setTimeout(() => {
+            jumpscare.classList.add('hidden');
+            deathScreen.classList.remove('hidden');
+            uiContainer.classList.remove('hidden');
+
+            // Unlock cursor
+            document.exitPointerLock();
+            this.controls.isLocked = false;
+
+            // Handle retry
+            const retryBtn = document.getElementById('retry-button');
+            if (retryBtn) {
+                retryBtn.onclick = () => window.location.reload();
+            }
+        }, 2000);
+    }
+
+    showNotification(text) {
+        // Simple screen notification
+        const notification = document.createElement('div');
+        notification.style.position = 'absolute';
+        notification.style.bottom = '20%';
+        notification.style.left = '50%';
+        notification.style.transform = 'translateX(-50%)';
+        notification.style.color = '#ffd700'; // Gold
+        notification.style.fontSize = '24px';
+        notification.style.fontWeight = 'bold';
+        notification.style.fontFamily = 'Courier New, monospace';
+        notification.style.textShadow = '2px 2px #000';
+        notification.style.pointerEvents = 'none';
+        notification.style.zIndex = '100';
+        notification.innerText = text;
+
+        document.body.appendChild(notification);
+
+        setTimeout(() => {
+            notification.style.transition = 'opacity 2.0s';
+            notification.style.opacity = '0';
+            setTimeout(() => notification.remove(), 2000);
+        }, 3000);
     }
 }
 

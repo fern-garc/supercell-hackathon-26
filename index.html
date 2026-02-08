@@ -32,14 +32,36 @@
                     <div class="control-tip"><span>MOUSE</span> Look</div>
                     <div class="control-tip"><span>F</span> Light</div>
                     <div class="control-tip"><span>R</span> Flash</div>
+                    <div class="control-tip"><span>E</span> Interact</div>
                     <div class="control-tip"><span>ESC</span> Menu</div>
                 </div>
                 <button id="start-button" class="modal-button primary">ENTER THE VOID</button>
             </div>
         </div>
+
+        <div id="ending-screen" class="hidden">
+            <h1 class="glitch" data-text="ESCAPED">ESCAPED</h1>
+            <p>You have survived the Haunted Mansion.</p>
+            <button id="replay-button" class="modal-button primary">REPLAY</button>
+        </div>
+
+        <div id="death-screen" class="hidden">
+            <h1 class="glitch" data-text="CLAIMED">CLAIMED</h1>
+            <p>The Mansion has claimed another soul.</p>
+            <button id="retry-button" class="modal-button primary">TRY AGAIN</button>
+        </div>
     </div>
 
+    <div id="jumpscare-overlay" class="hidden">
+        <div class="monster-face">
+            <div class="eye left"></div>
+            <div class="eye right"></div>
+        </div>
+    </div>
+
+    <div id="interaction-prompt" class="hidden">Press E to pick up</div>
     <canvas id="gameCanvas"></canvas>
+    <div id="crosshair"></div>
 
     <!-- Three.js -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -54,6 +76,7 @@
     <script src="src/entities/CeilingLight.js"></script>
     <script src="src/entities/Flashlight.js"></script>
     <script src="src/entities/Monster.js"></script>
+    <script src="src/entities/Book.js"></script>
     <script src="src/game.js"></script>
 </body>
 

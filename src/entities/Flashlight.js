@@ -119,6 +119,10 @@ class Flashlight {
             this.mesh.visible = true; // Mesh always visible in hand
             this.lens.visible = true;
             this.lens.material.emissiveIntensity = this.light.visible ? 0.5 : 0.05;
+
+            if (this.audio) {
+                this.audio.playGlobal('flashlight-click', 0.4);
+            }
         }
     }
 
@@ -153,9 +157,6 @@ class Flashlight {
                     const flickerChance = (this.onTime - 10) / (this.maxOnTime - 10); // 0 to 1
                     if (Math.random() < flickerChance * 0.3) {
                         this.light.intensity = Math.random() < 0.5 ? 0.1 : this.baseIntensity;
-                        if (window.gameInstance && window.gameInstance.audio && Math.random() < 0.1) {
-                            window.gameInstance.audio.playProceduralThump(0.01, 1200);
-                        }
                     } else {
                         this.light.intensity = this.baseIntensity;
                     }
@@ -168,10 +169,6 @@ class Flashlight {
                     this.isOverheated = true;
                     this.timeoutTimer = 10;
                     this.light.visible = false;
-                    if (window.gameInstance && window.gameInstance.audio) {
-                        // Fizzle sound
-                        window.gameInstance.audio.playProceduralThump(0.1, 100);
-                    }
                 }
             } else {
                 // Cool down slowly when off

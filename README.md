@@ -1,6 +1,6 @@
 ## 🔊 Audio Credits
 
-Audio assets used in this project were obtained from Freesound and are licensed under Creative Commons licenses.
+Audio assets used in this project were obtained from Freesound and are licensed under Creative Commons licenses. We give credit to the following authors:
 
 ### Sound Effects
 * Heart beat.Valve move and muscle work.Sound design_EM.wav by newlocknew -- https://freesound.org/s/614938/ -- License: Attribution NonCommercial 4.0

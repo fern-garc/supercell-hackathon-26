@@ -100,8 +100,7 @@ class CeilingLight {
             if (window.gameInstance && window.gameInstance.camera && window.gameInstance.audio) {
                 const dist = window.gameInstance.camera.position.distanceTo(this.position);
                 if (dist < 10 && Math.random() < 0.3) {
-                    // Small buzz/pop sound
-                    window.gameInstance.audio.playProceduralThump(0.02, 800 + Math.random() * 400);
+                    // Buzz effect handled by visual flickering
                 }
             }
         }

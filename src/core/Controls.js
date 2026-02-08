@@ -16,12 +16,19 @@ class FirstPersonControls {
         this.velocity = new THREE.Vector3();
         this.velocityY = 0;
         this.isGrounded = false;
+        this.isJumping = false;
 
         // Game feel settings
         this.coyoteTime = 0.1; // Grace period after walking off edge
         this.coyoteTimeCounter = 0;
         this.jumpBufferTime = 0.1; // Grace period for early jump press
         this.jumpBufferCounter = 0;
+
+        // Footstep logic
+        this.footstepTimer = 0;
+        this.footstepDistance = 0;
+        this.footstepInterval = 2.5; // Meters between steps
+        this.audio = null;
 
         this.direction = new THREE.Vector3();
 
@@ -165,8 +172,11 @@ class FirstPersonControls {
         if (this.jumpBufferCounter > 0 && this.coyoteTimeCounter > 0) {
             this.velocityY = this.jumpStrength;
             this.isGrounded = false;
+            this.isJumping = true; // Signal a jump started
             this.coyoteTimeCounter = 0;
             this.jumpBufferCounter = 0;
+        } else {
+            this.isJumping = false;
         }
 
         // Apply gravity
@@ -193,6 +203,8 @@ class FirstPersonControls {
         if (this.moveLeft) movement.add(right.multiplyScalar(-moveSpeed));
 
         // Apply horizontal movement with collision detection
+        const prevPositionX = this.camera.position.x;
+        const prevPositionZ = this.camera.position.z;
         const nextPosition = this.camera.position.clone();
 
         // Try X movement
@@ -211,6 +223,21 @@ class FirstPersonControls {
             nextPosition.z = this.camera.position.z;
         }
 
+        // Handle footsteps
+        if (this.isGrounded) {
+            const dx = this.camera.position.x - prevPositionX;
+            const dz = this.camera.position.z - prevPositionZ;
+            const distanceMoved = Math.sqrt(dx * dx + dz * dz);
+
+            if (distanceMoved > 0) {
+                this.footstepDistance += distanceMoved;
+                if (this.footstepDistance >= this.footstepInterval) {
+                    if (this.audio) this.audio.playProceduralThump(0.1, 150);
+                    this.footstepDistance = 0;
+                }
+            }
+        }
+
         // Apply vertical movement (jumping/gravity)
         const deltaY = this.velocityY * delta;
         nextPosition.y = this.camera.position.y + deltaY;
@@ -222,6 +249,10 @@ class FirstPersonControls {
             // Collision detected in Y axis
             if (this.velocityY < 0) {
                 // Falling and hit something (floor)
+                if (!this.isGrounded && this.audio) {
+                    // Play landing sound
+                    this.audio.playProceduralThump(0.3, 80);
+                }
                 this.isGrounded = true;
                 this.velocityY = 0;
             } else if (this.velocityY > 0) {
@@ -247,6 +278,7 @@ class FirstPersonControls {
             new THREE.Vector3(this.playerRadius * 2, this.playerHeight, this.playerRadius * 2)
         );
 
+        // Check static collidables
         for (const object of this.collidables) {
             // Use cached or compute world bounding box
             if (!object.userData.boundingBox) {
@@ -258,6 +290,17 @@ class FirstPersonControls {
                 return true;
             }
         }
+
+        // Check dynamic walls (from environment)
+        if (window.gameInstance && window.gameInstance.environment) {
+            for (const dWall of window.gameInstance.environment.dynamicWalls) {
+                const wallBox = dWall.getCollisionBox();
+                if (wallBox && playerBox.intersectsBox(wallBox)) {
+                    return true;
+                }
+            }
+        }
+
         return false;
     }
 }

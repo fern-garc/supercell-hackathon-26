@@ -229,13 +229,6 @@ class FirstPersonControls {
             const dz = this.camera.position.z - prevPositionZ;
             const distanceMoved = Math.sqrt(dx * dx + dz * dz);
 
-            if (distanceMoved > 0) {
-                this.footstepDistance += distanceMoved;
-                if (this.footstepDistance >= this.footstepInterval) {
-                    if (this.audio) this.audio.playProceduralThump(0.1, 150);
-                    this.footstepDistance = 0;
-                }
-            }
         }
 
         // Apply vertical movement (jumping/gravity)
@@ -249,10 +242,6 @@ class FirstPersonControls {
             // Collision detected in Y axis
             if (this.velocityY < 0) {
                 // Falling and hit something (floor)
-                if (!this.isGrounded && this.audio) {
-                    // Play landing sound
-                    this.audio.playProceduralThump(0.3, 80);
-                }
                 this.isGrounded = true;
                 this.velocityY = 0;
             } else if (this.velocityY > 0) {

@@ -46,7 +46,7 @@ class Game {
         this.audio = new AudioManager(this.camera);
 
         // Flashlight (initialized before environment so it can be toggled by controls)
-        this.flashlight = new Flashlight(this.camera);
+        this.flashlight = new Flashlight(this.camera, this.audio);
         this.controls.onFlashlightToggle = () => this.flashlight.toggle();
         this.controls.audio = this.audio;
 

@@ -13,6 +13,12 @@ class AudioManager {
         this.loadAllSounds();
     }
 
+    resume() {
+        if (this.listener.context.state === 'suspended') {
+            this.listener.context.resume();
+        }
+    }
+
     async loadAllSounds() {
         const soundsToLoad = [
             { name: 'atmosphere', url: 'src/soundLibrary/atmosphere.wav' },

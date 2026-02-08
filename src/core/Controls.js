@@ -44,6 +44,7 @@ class FirstPersonControls {
         // Flashlight toggle callback
         this.onFlashlightToggle = null;
         this.onCrystalFlash = null;
+        this.onInteract = null;
 
         // Collision detection
         this.collidables = [];
@@ -88,7 +89,7 @@ class FirstPersonControls {
 
     onKeyDown(event) {
         // Prevent default browser behavior for game keys (like scrolling with Space)
-        const handledKeys = ['KeyW', 'KeyS', 'KeyA', 'KeyD', 'KeyF', 'KeyR', 'Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'];
+        const handledKeys = ['KeyW', 'KeyS', 'KeyA', 'KeyD', 'KeyF', 'KeyR', 'KeyE', 'Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'];
         if (handledKeys.includes(event.code)) {
             event.preventDefault();
         }
@@ -115,6 +116,9 @@ class FirstPersonControls {
                 break;
             case 'KeyR':
                 if (this.onCrystalFlash) this.onCrystalFlash();
+                break;
+            case 'KeyE':
+                if (this.onInteract) this.onInteract();
                 break;
             case 'Space':
                 this.jumpBufferCounter = this.jumpBufferTime;

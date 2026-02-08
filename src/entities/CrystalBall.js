@@ -1,6 +1,7 @@
 class CrystalBall {
-    constructor(camera) {
+    constructor(camera, audio) {
         this.camera = camera;
+        this.audio = audio;
         this.group = new THREE.Group();
         this.mesh = null;
         this.hand = null;
@@ -9,6 +10,7 @@ class CrystalBall {
         this.flashIntensity = 0;
         this.cooldown = 20; // 20 seconds
         this.cooldownTimer = 0;
+        this.stunRange = 20.0; // Stun range limit
 
         this.init();
     }
@@ -99,6 +101,21 @@ class CrystalBall {
         if (this.cooldownTimer <= 0) {
             this.flashIntensity = 10.0; // Sharp peak
             this.cooldownTimer = this.cooldown;
+
+            if (this.audio) {
+                this.audio.playGlobal('money', 1.0);
+            }
+
+            // Stun the monster if it exists and is within range
+            if (window.gameInstance && window.gameInstance.monster) {
+                const monsterPos = window.gameInstance.monster.mesh.position;
+                const dist = this.camera.position.distanceTo(monsterPos);
+
+                if (dist < this.stunRange) {
+                    window.gameInstance.monster.stun(5); // 5 second stun
+                }
+            }
+
             return true;
         }
         return false;

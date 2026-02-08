@@ -11,8 +11,8 @@ class Environment {
         const cellSize = 4;
         const gridSize = 21; // Must be odd
         const totalSize = cellSize * gridSize;
-        const maze = new Maze(gridSize, gridSize);
-        const grid = maze.generate();
+        this.maze = new Maze(gridSize, gridSize);
+        const grid = this.maze.generate();
 
         // Ensure start position is clear
         const startX = Math.floor(gridSize / 2);

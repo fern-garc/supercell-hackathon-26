@@ -7,6 +7,7 @@ class Game {
         this.controls = null;
         this.environment = null;
         this.flashlight = null;
+        this.monster = null;
         this.crystalBall = null;
         this.audio = null;
         this.clock = new THREE.Clock();
@@ -94,12 +95,15 @@ class Game {
         this.controls.audio = this.audio;
 
         // Crystal Ball
-        this.crystalBall = new CrystalBall(this.camera);
+        this.crystalBall = new CrystalBall(this.camera, this.audio);
         this.controls.onCrystalFlash = () => this.crystalBall.flash();
 
         // Environment
         this.environment = new Environment(this.scene);
         this.controls.collidables = this.environment.collidables;
+
+        // Monster
+        this.monster = new Monster(this.scene, this.environment.maze, this.camera);
 
         // Set camera start position from environment
         const startPos = this.environment.getStartPosition();
@@ -108,8 +112,31 @@ class Game {
         // Add camera to scene
         this.scene.add(this.camera);
 
+        // Start background music and atmosphere
+        this.backgroundSound = null;
+        this.startAtmosphere();
+
+        // Handle random creepy sounds
+        this.lastCreepySoundTime = Date.now();
+        this.creepySoundInterval = 20000 + Math.random() * 40000; // 20-60 seconds
+
         // Handle window resize
         window.addEventListener('resize', () => this.onWindowResize());
+    }
+
+    startAtmosphere() {
+        if (!this.audio) return;
+
+        // Try playing every second until it succeeds (handles browser audio policy)
+        const checkInterval = setInterval(() => {
+            if (this.audio.sounds.has('atmosphere')) {
+                this.backgroundSound = this.audio.playGlobal('atmosphere', 0.15, true);
+                if (this.backgroundSound) {
+                    clearInterval(checkInterval);
+                    console.log("Atmosphere started");
+                }
+            }
+        }, 1000);
     }
 
     onWindowResize() {
@@ -135,6 +162,26 @@ class Game {
 
         // Update controls
         this.controls.update(delta);
+
+        // Update Monster
+        if (this.monster) {
+            this.monster.update(delta, this.camera.position, this.audio);
+        }
+
+        // Random creepy sounds
+        if (this.audio) {
+            const now = Date.now();
+            if (now - this.lastCreepySoundTime > this.creepySoundInterval) {
+                const creepySounds = ['ghostly-trace', 'creeper', 'play-game', 'whos-there'];
+                const randomSound = creepySounds[Math.floor(Math.random() * creepySounds.length)];
+
+                // Play as a global sound with low volume
+                this.audio.playGlobal(randomSound, 0.3);
+
+                this.lastCreepySoundTime = now;
+                this.creepySoundInterval = 30000 + Math.random() * 60000; // Next one in 30-90s
+            }
+        }
 
         // Render
         this.renderer.render(this.scene, this.camera);

@@ -8,6 +8,8 @@ class AudioManager {
 
         // Intensity of the last "noise" made, used for monster detection
         this.currentNoiseLevel = 0;
+
+        this.loadSound('money', 'src/sound/money.wav');
     }
 
     // Load a sound and store it

@@ -1,6 +1,7 @@
 class Flashlight {
-    constructor(camera) {
+    constructor(camera, audio) {
         this.camera = camera;
+        this.audio = audio;
         this.group = new THREE.Group();
         this.light = null;
         this.mesh = null;

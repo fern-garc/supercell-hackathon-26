@@ -1,55 +1,225 @@
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Recursive:wght@300;400&display=swap');
+
 * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
 }
 
+html,
 body {
-    width: 100vw;
-    height: 100vh;
+    width: 100%;
+    height: 100%;
     overflow: hidden;
     background-color: #000;
-    font-family: 'Courier New', monospace;
+}
+
+body {
+    font-family: 'Recursive', sans-serif;
+    color: #eee;
 }
 
 #gameCanvas {
+    position: absolute;
+    top: 0;
+    left: 0;
     width: 100%;
     height: 100%;
+    z-index: 1;
+}
+
+#ui-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.95);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+    transition: opacity 0.8s ease-in-out;
+}
+
+#ui-container.fade-out {
+    opacity: 0;
+    pointer-events: none;
+}
+
+#game-modal {
+    width: 95%;
+    max-width: 500px;
+    background: #0a0a0a;
+    border: 1px solid #400;
+    padding: 40px;
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    box-shadow: 0 0 100px rgba(0, 0, 0, 1), 0 0 20px rgba(139, 0, 0, 0.1);
+}
+
+.glitch {
+    font-family: 'Cinzel', serif;
+    font-size: 2.5rem;
+    color: #8b0000;
+    letter-spacing: 5px;
+    margin-bottom: 30px;
+    position: relative;
     display: block;
-    cursor: none;
+    /* Force block to ensure centering via text-align */
+    text-transform: uppercase;
+}
+
+.warning-text {
+    width: 100%;
+    font-size: 0.8rem;
+    color: #888;
+    line-height: 1.5;
+    padding: 15px;
+    background: rgba(139, 0, 0, 0.05);
+    border: 1px solid rgba(139, 0, 0, 0.2);
+    margin-bottom: 30px;
+    text-align: center;
+}
+
+.warning-text strong {
+    color: #f33;
+}
+
+.loader-container {
+    width: 100%;
+    height: 4px;
+    background: #111;
+    margin: 20px 0;
+    position: relative;
+    overflow: hidden;
+}
+
+.loader-bar {
+    width: 0%;
+    height: 100%;
+    background: #8b0000;
+    box-shadow: 0 0 15px #f00;
+    transition: width 0.3s ease;
+}
+
+#loading-text {
+    font-size: 0.7rem;
+    color: #555;
+    text-transform: uppercase;
+    letter-spacing: 2px;
 }
 
 #instructions {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    text-align: center;
-    color: #fff;
-    background: rgba(0, 0, 0, 0.8);
-    padding: 40px;
-    border: 2px solid #8b0000;
-    border-radius: 10px;
-    z-index: 10;
-    transition: opacity 0.5s;
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 15px;
+    margin: 30px 0;
+    padding: 20px;
+    background: #050505;
+    border: 1px solid #1a1a1a;
 }
 
-#instructions.hidden {
-    opacity: 0;
-    pointer-events: none;
-    display: none;
+.control-tip {
+    font-size: 0.75rem;
+    color: #aaa;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
 }
 
-#instructions h1 {
-    font-size: 48px;
+.control-tip span {
+    background: #111;
     color: #8b0000;
-    text-shadow: 0 0 10px #ff0000;
-    margin-bottom: 20px;
-    letter-spacing: 3px;
+    padding: 4px 8px;
+    border: 1px solid #300;
+    margin-right: 12px;
+    min-width: 60px;
+    text-align: center;
+    font-weight: bold;
+    font-family: monospace;
 }
 
-#instructions p {
-    font-size: 18px;
-    margin: 10px 0;
-    color: #ccc;
+.modal-button {
+    background: #8b0000;
+    color: #fff;
+    border: none;
+    padding: 16px 40px;
+    font-family: 'Cinzel', serif;
+    font-size: 1.2rem;
+    font-weight: bold;
+    cursor: pointer;
+    letter-spacing: 4px;
+    transition: all 0.3s ease;
+    width: 100%;
+    margin-top: 10px;
+}
+
+.modal-button:hover {
+    background: #b00;
+    box-shadow: 0 0 30px rgba(255, 0, 0, 0.4);
+    transform: translateY(-2px);
+}
+
+.hidden {
+    display: none !important;
+}
+
+/* Base state for glitch layers */
+.glitch::before,
+.glitch::after {
+    content: attr(data-text);
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0.8;
+}
+
+@keyframes glitch-anim {
+    0% {
+        clip: rect(10px, 9999px, 20px, 0);
+        transform: skew(0.5deg);
+    }
+
+    20% {
+        clip: rect(30px, 9999px, 40px, 0);
+        transform: skew(-0.5deg);
+    }
+
+    40% {
+        clip: rect(50px, 9999px, 60px, 0);
+        transform: skew(0.8deg);
+    }
+
+    60% {
+        clip: rect(10px, 9999px, 30px, 0);
+        transform: skew(-0.8deg);
+    }
+
+    80% {
+        clip: rect(40px, 9999px, 20px, 0);
+        transform: skew(0.2deg);
+    }
+
+    100% {
+        clip: rect(20px, 9999px, 50px, 0);
+        transform: skew(-0.2deg);
+    }
+}
+
+.glitch::before {
+    left: 2px;
+    text-shadow: -2px 0 #f00;
+    animation: glitch-anim 3s infinite linear alternate-reverse;
+}
+
+.glitch::after {
+    left: -2px;
+    text-shadow: 2px 0 #0ff;
+    animation: glitch-anim 5s infinite linear alternate-reverse;
 }

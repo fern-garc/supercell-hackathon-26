@@ -9,12 +9,34 @@
 </head>
 
 <body>
-    <div id="instructions">
-        <h1>Haunted Mansion</h1>
-        <p>Click to start</p>
-        <p>WASD to move, Mouse to look around</p>
-        <p>F to toggle Flashlight</p>
-        <p>ESC to unlock cursor</p>
+    <div id="ui-container">
+        <div id="game-modal">
+            <h1 class="glitch" data-text="HAUNTED MANSION">HAUNTED MANSION</h1>
+
+            <div id="warning-section">
+                <p class="warning-text">⚠️ <strong>PHOTOSENSITIVITY WARNING:</strong> This experience contains flashing
+                    lights and patterns that may trigger seizures.</p>
+            </div>
+
+            <div id="loading-section">
+                <div class="loader-container">
+                    <div class="loader-bar"></div>
+                </div>
+                <p id="loading-text">Preparing the Mansion...</p>
+            </div>
+
+            <div id="start-section" class="hidden">
+                <div id="instructions">
+                    <div class="control-tip"><span>W A S D</span> Move</div>
+                    <div class="control-tip"><span>SPACE</span> Jump</div>
+                    <div class="control-tip"><span>MOUSE</span> Look</div>
+                    <div class="control-tip"><span>F</span> Light</div>
+                    <div class="control-tip"><span>R</span> Flash</div>
+                    <div class="control-tip"><span>ESC</span> Menu</div>
+                </div>
+                <button id="start-button" class="modal-button primary">ENTER THE VOID</button>
+            </div>
+        </div>
     </div>
 
     <canvas id="gameCanvas"></canvas>
@@ -28,6 +50,8 @@
     <script src="src/core/Environment.js"></script>
     <script src="src/entities/Maze.js"></script>
     <script src="src/entities/DynamicWall.js"></script>
+    <script src="src/entities/CrystalBall.js"></script>
+    <script src="src/entities/CeilingLight.js"></script>
     <script src="src/entities/Flashlight.js"></script>
     <script src="src/game.js"></script>
 </body>

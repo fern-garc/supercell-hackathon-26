@@ -32,11 +32,12 @@ class DynamicWall {
 
         if (this.type === 'proximity') {
             const dist = playerPos.distanceTo(this.startPos);
-            targetOpen = dist < 5;
+            if (dist < 5) this.isOpen = true; // Once open, stays open
+            targetOpen = this.isOpen;
         } else if (this.type === 'trigger') {
-            // If the player jumps near this wall, it toggles
+            // If the player jumps near this wall, it opens and stays open
             if (isJumping && playerPos.distanceTo(this.startPos) < 8) {
-                this.isOpen = !this.isOpen;
+                this.isOpen = true;
             }
             targetOpen = this.isOpen;
         }

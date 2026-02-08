@@ -43,6 +43,7 @@ class FirstPersonControls {
 
         // Flashlight toggle callback
         this.onFlashlightToggle = null;
+        this.onCrystalFlash = null;
 
         // Collision detection
         this.collidables = [];
@@ -64,11 +65,21 @@ class FirstPersonControls {
 
         document.addEventListener('pointerlockchange', () => {
             this.isLocked = document.pointerLockElement === this.domElement;
-            const instructions = document.getElementById('instructions');
-            if (this.isLocked) {
-                instructions.classList.add('hidden');
-            } else {
-                instructions.classList.remove('hidden');
+            const ui = document.getElementById('ui-container');
+            if (ui) {
+                if (this.isLocked) {
+                    ui.classList.add('hidden');
+                    ui.classList.remove('fade-out'); // Reset for next time
+                } else {
+                    ui.classList.remove('hidden');
+                    // We don't want the fade-out class when we return from pause
+                    ui.classList.remove('fade-out');
+                    // Ensure we show the start section (which has controls)
+                    const startSection = document.getElementById('start-section');
+                    const loadingSection = document.getElementById('loading-section');
+                    if (startSection) startSection.classList.remove('hidden');
+                    if (loadingSection) loadingSection.classList.add('hidden');
+                }
             }
         });
 
@@ -77,7 +88,7 @@ class FirstPersonControls {
 
     onKeyDown(event) {
         // Prevent default browser behavior for game keys (like scrolling with Space)
-        const handledKeys = ['KeyW', 'KeyS', 'KeyA', 'KeyD', 'KeyF', 'Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'];
+        const handledKeys = ['KeyW', 'KeyS', 'KeyA', 'KeyD', 'KeyF', 'KeyR', 'Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'];
         if (handledKeys.includes(event.code)) {
             event.preventDefault();
         }
@@ -101,6 +112,9 @@ class FirstPersonControls {
                 break;
             case 'KeyF':
                 if (this.onFlashlightToggle) this.onFlashlightToggle();
+                break;
+            case 'KeyR':
+                if (this.onCrystalFlash) this.onCrystalFlash();
                 break;
             case 'Space':
                 this.jumpBufferCounter = this.jumpBufferTime;
@@ -261,10 +275,10 @@ class FirstPersonControls {
     checkCollisions(position) {
         // Player bounding box (Feet are 1.6m below camera position)
         // Center the box 0.7m below the camera so the bottom (eyes-0.9) matches feet
-        const boxCenter = new THREE.Vector3(position.x, position.y - 0.7, position.z);
+        const boxCenter = new THREE.Vector3(position.x, position.y - 0.75, position.z);
         const playerBox = new THREE.Box3().setFromCenterAndSize(
             boxCenter,
-            new THREE.Vector3(this.playerRadius * 2, this.playerHeight, this.playerRadius * 2)
+            new THREE.Vector3(this.playerRadius * 2, this.playerHeight * 0.9, this.playerRadius * 2)
         );
 
         // Check static collidables

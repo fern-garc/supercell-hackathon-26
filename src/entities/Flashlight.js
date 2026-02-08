@@ -1,6 +1,7 @@
 class Flashlight {
-    constructor(camera) {
+    constructor(camera, audio) {
         this.camera = camera;
+        this.audio = audio;
         this.light = null;
         this.mesh = null;
         this.lens = null;
@@ -62,6 +63,9 @@ class Flashlight {
             this.light.visible = !this.light.visible;
             this.mesh.visible = this.light.visible;
             this.lens.visible = this.light.visible;
+            if (this.light.visible) {
+                this.audio.playGlobal('money', 1.0);
+            }
         }
     }
 }

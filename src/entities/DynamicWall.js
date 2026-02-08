@@ -50,14 +50,6 @@ class DynamicWall {
             this.transition = Math.max(0, this.transition - delta * this.speed);
         }
 
-        // Sound effect for movement
-        if (wasMoving && window.gameInstance && window.gameInstance.audio) {
-            // Low rumble/grind sound
-            if (Math.random() < 0.1) { // Sparsely play to simulate grinding
-                window.gameInstance.audio.playProceduralThump(0.05, 50 + Math.random() * 20);
-            }
-        }
-
         // Update position
         this.mesh.position.lerpVectors(this.startPos, this.openPos, this.transition);
 

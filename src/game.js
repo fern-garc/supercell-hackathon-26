@@ -7,6 +7,7 @@ class Game {
         this.controls = null;
         this.environment = null;
         this.flashlight = null;
+        this.audio = null;
         this.clock = new THREE.Clock();
 
         this.init();
@@ -25,7 +26,8 @@ class Game {
             0.1,
             1000
         );
-        this.camera.position.set(0, 1.6, 10);
+        // Position will be set after environment init
+        this.camera.position.set(0, 1.6, 0);
 
         // Renderer
         this.renderer = new THREE.WebGLRenderer({
@@ -40,13 +42,21 @@ class Game {
         // Controls
         this.controls = new FirstPersonControls(this.camera, this.canvas);
 
+        // Audio Manager
+        this.audio = new AudioManager(this.camera);
+
         // Flashlight (initialized before environment so it can be toggled by controls)
         this.flashlight = new Flashlight(this.camera);
         this.controls.onFlashlightToggle = () => this.flashlight.toggle();
+        this.controls.audio = this.audio;
 
         // Environment
         this.environment = new Environment(this.scene);
         this.controls.collidables = this.environment.collidables;
+
+        // Set camera start position from environment
+        const startPos = this.environment.getStartPosition();
+        this.camera.position.copy(startPos);
 
         // Add camera to scene
         this.scene.add(this.camera);
@@ -66,6 +76,11 @@ class Game {
 
         const delta = this.clock.getDelta();
 
+        // Update environment (dynamic walls)
+        if (this.environment) {
+            this.environment.update(delta, this.camera.position, this.controls.isJumping);
+        }
+
         // Update controls
         this.controls.update(delta);
 
@@ -76,5 +91,5 @@ class Game {
 
 // Start the game when the page loads
 window.addEventListener('DOMContentLoaded', () => {
-    new Game();
+    window.gameInstance = new Game();
 });

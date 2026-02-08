@@ -2,52 +2,93 @@ class Environment {
     constructor(scene) {
         this.scene = scene;
         this.collidables = [];
+        this.dynamicWalls = [];
         this.createEnvironment();
     }
 
     createEnvironment() {
+        const cellSize = 4;
+        const gridSize = 21; // Must be odd
+        const totalSize = cellSize * gridSize;
+        const maze = new Maze(gridSize, gridSize);
+        const grid = maze.generate();
+
+        // Ensure start position is clear
+        const startX = Math.floor(gridSize / 2);
+        const startZ = Math.floor(gridSize / 2);
+        grid[startZ][startX] = false;
+        grid[startZ + 1][startX] = false; // Add a bit of space
+        grid[startZ - 1][startX] = false;
+
+        this.startPosition = new THREE.Vector3(
+            (startX - gridSize / 2 + 0.5) * cellSize,
+            1.6,
+            (startZ - gridSize / 2 + 0.5) * cellSize
+        );
+
         // Floor
-        const floorGeometry = new THREE.BoxGeometry(50, 0.1, 50);
+        const floorGeometry = new THREE.BoxGeometry(totalSize, 0.1, totalSize);
         const floorMaterial = new THREE.MeshStandardMaterial({
             color: 0x2a1a1a,
             roughness: 0.8,
             metalness: 0.2
         });
         const floor = new THREE.Mesh(floorGeometry, floorMaterial);
-        floor.position.y = -0.05; // Top surface at y=0
+        floor.position.y = -0.05;
         floor.receiveShadow = true;
         this.scene.add(floor);
         this.collidables.push(floor);
 
-        // Walls - Create a room
-        this.createWall(0, 2.5, -25, 50, 5, 0.5, 0x3a2a2a); // Back wall
-        this.createWall(0, 2.5, 25, 50, 5, 0.5, 0x3a2a2a);  // Front wall
-        this.createWall(-25, 2.5, 0, 0.5, 5, 50, 0x3a2a2a); // Left wall
-        this.createWall(25, 2.5, 0, 0.5, 5, 50, 0x3a2a2a);  // Right wall
-
         // Ceiling
-        const ceilingGeometry = new THREE.BoxGeometry(50, 0.1, 50);
+        const ceilingGeometry = new THREE.BoxGeometry(totalSize, 0.1, totalSize);
         const ceilingMaterial = new THREE.MeshStandardMaterial({
             color: 0x1a1a1a,
             roughness: 0.9
         });
         const ceiling = new THREE.Mesh(ceilingGeometry, ceilingMaterial);
-        ceiling.position.y = 5.05; // Bottom surface at y=5
+        ceiling.position.y = 5.05;
         this.scene.add(ceiling);
         this.collidables.push(ceiling);
 
-        // Add some decorative elements
-        this.addPillars();
+        // Build Maze Walls
+        for (let y = 0; y < gridSize; y++) {
+            for (let x = 0; x < gridSize; x++) {
+                if (grid[y][x]) {
+                    const posX = (x - gridSize / 2 + 0.5) * cellSize;
+                    const posZ = (y - gridSize / 2 + 0.5) * cellSize;
+
+                    // Randomly decide to make it a dynamic wall
+                    // Level edge should always be static
+                    const isEdge = x === 0 || x === gridSize - 1 || y === 0 || y === gridSize - 1;
+                    if (!isEdge && Math.random() < 0.15) {
+                        const type = Math.random() < 0.5 ? 'proximity' : 'trigger';
+                        const dWall = new DynamicWall(this.scene, posX, 2.5, posZ, cellSize, 5, cellSize, type);
+                        this.dynamicWalls.push(dWall);
+                    } else {
+                        this.createWall(posX, 2.5, posZ, cellSize, 5, cellSize, 0x3a2a2a);
+                    }
+                }
+            }
+        }
 
         // Lighting
         this.setupLighting();
-        // this.setupTestingLighting();
 
         // Fog for atmosphere
         this.scene.fog = new THREE.Fog(0x000000, 1, 40);
 
-        // Force update world matrices for collision detection
+        // Force update world matrices
         this.scene.updateMatrixWorld(true);
+    }
+
+    getStartPosition() {
+        return this.startPosition;
+    }
+
+    update(delta, playerPos, isJumping) {
+        this.dynamicWalls.forEach(wall => {
+            wall.update(delta, playerPos, isJumping);
+        });
     }
 
     createWall(x, y, z, width, height, depth, color) {
@@ -65,35 +106,6 @@ class Environment {
         this.collidables.push(wall);
     }
 
-    addPillars() {
-        const pillarPositions = [
-            [-15, 2.5, -15],
-            [15, 2.5, -15],
-            [-15, 2.5, 15],
-            [15, 2.5, 15]
-        ];
-
-        pillarPositions.forEach(pos => {
-            const geometry = new THREE.CylinderGeometry(0.8, 1, 5, 8);
-            const material = new THREE.MeshStandardMaterial({
-                color: 0x4a3a3a,
-                roughness: 0.7
-            });
-            const pillar = new THREE.Mesh(geometry, material);
-            pillar.position.set(pos[0], pos[1], pos[2]);
-            pillar.castShadow = true;
-            pillar.receiveShadow = true;
-            this.scene.add(pillar);
-            this.collidables.push(pillar);
-        });
-    }
-
-    setupTestingLighting() {
-        const brightLight = new THREE.PointLight(0xffffff, 10, 100);
-        brightLight.position.set(0, 10, 0);
-        this.scene.add(brightLight);
-    }
-
     setupLighting() {
         // Ambient light (very dim for spooky atmosphere)
         const ambientLight = new THREE.AmbientLight(0x404040, 0.1);
@@ -101,12 +113,14 @@ class Environment {
 
         // Directional light (moonlight effect)
         const directionalLight = new THREE.DirectionalLight(0x8080ff, 0.2);
-        directionalLight.position.set(10, 20, 10);
+        directionalLight.position.set(10, 40, 10);
         directionalLight.castShadow = true;
-        directionalLight.shadow.camera.left = -30;
-        directionalLight.shadow.camera.right = 30;
-        directionalLight.shadow.camera.top = 30;
-        directionalLight.shadow.camera.bottom = -30;
+        directionalLight.shadow.camera.left = -50;
+        directionalLight.shadow.camera.right = 50;
+        directionalLight.shadow.camera.top = 50;
+        directionalLight.shadow.camera.bottom = -50;
+        directionalLight.shadow.mapSize.width = 2048; // Higher res for larger area
+        directionalLight.shadow.mapSize.height = 2048;
         this.scene.add(directionalLight);
 
         // Point lights for eerie glow

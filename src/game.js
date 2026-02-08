@@ -13,6 +13,8 @@ class Game {
         this.audio = null;
         this.clock = new THREE.Clock();
         this.isGameStarted = false;
+        this.isPaused = false;
+        this.isGameOver = false;
 
         this.init();
         this.handleLoading();
@@ -62,6 +64,22 @@ class Game {
             // Auto-lock mouse
             this.canvas.requestPointerLock();
         });
+
+        // Pause Menu Listeners
+        const resumeBtn = document.getElementById('resume-button');
+        const restartBtn = document.getElementById('restart-button');
+
+        if (resumeBtn) {
+            resumeBtn.addEventListener('click', () => {
+                this.canvas.requestPointerLock();
+            });
+        }
+
+        if (restartBtn) {
+            restartBtn.addEventListener('click', () => {
+                window.location.reload();
+            });
+        }
     }
 
     init() {
@@ -139,8 +157,8 @@ class Game {
 
         // Try playing every second until it succeeds (handles browser audio policy)
         const checkInterval = setInterval(() => {
-            if (this.audio.sounds.has('atmosphere')) {
-                this.backgroundSound = this.audio.playGlobal('atmosphere', 0.15, true);
+            if (this.audio.sounds.has('ghostly-trace')) {
+                this.backgroundSound = this.audio.playGlobal('ghostly-trace', 0.15, true);
                 if (this.backgroundSound) {
                     clearInterval(checkInterval);
                     console.log("Atmosphere started");
@@ -157,6 +175,8 @@ class Game {
 
     animate() {
         requestAnimationFrame(() => this.animate());
+
+        if (this.isPaused || !this.isGameStarted) return;
 
         const delta = this.clock.getDelta();
         const time = this.clock.getElapsedTime(); // Get elapsed time for item updates
@@ -189,7 +209,7 @@ class Game {
         if (this.audio) {
             const now = Date.now();
             if (now - this.lastCreepySoundTime > this.creepySoundInterval) {
-                const creepySounds = ['ghostly-trace', 'creeper', 'play-game', 'whos-there'];
+                const creepySounds = ['creeper', 'play-game', 'whos-there'];
                 const randomSound = creepySounds[Math.floor(Math.random() * creepySounds.length)];
 
                 // Play as a global sound with low volume
@@ -248,7 +268,37 @@ class Game {
         }
     }
 
+    togglePause(paused) {
+        if (this.isGameOver) return; // Don't pause if the game is over
+
+        this.isPaused = paused;
+        const uiContainer = document.getElementById('ui-container');
+        const gameModal = document.getElementById('game-modal');
+        const pauseSection = document.getElementById('pause-section');
+        const startSection = document.getElementById('start-section');
+
+        if (this.isPaused) {
+            uiContainer.classList.remove('hidden');
+            uiContainer.classList.remove('fade-out');
+            if (gameModal) gameModal.classList.remove('hidden');
+            pauseSection.classList.remove('hidden');
+            startSection.classList.add('hidden');
+            this.clock.stop();
+        } else {
+            // Only hide UI if we're actually resuming (not ending)
+            if (!this.isGameOver) {
+                uiContainer.classList.add('hidden');
+                pauseSection.classList.add('hidden');
+            }
+            this.clock.start();
+        }
+    }
+
     showEnding() {
+        this.isGameStarted = false;
+        this.isGameOver = true;
+        this.isPaused = false;
+
         const endingScreen = document.getElementById('ending-screen');
         const gameModal = document.getElementById('game-modal');
         const uiContainer = document.getElementById('ui-container');
@@ -256,6 +306,7 @@ class Game {
         if (gameModal) gameModal.classList.add('hidden');
         endingScreen.classList.remove('hidden');
         uiContainer.classList.remove('hidden');
+        uiContainer.classList.remove('fade-out');
 
         // Unlock cursor
         document.exitPointerLock();
@@ -269,8 +320,10 @@ class Game {
     }
 
     onPlayerDeath() {
-        if (!this.isGameStarted) return;
+        if (!this.isGameStarted || this.isGameOver) return;
         this.isGameStarted = false;
+        this.isGameOver = true;
+        this.isPaused = false;
 
         const jumpscare = document.getElementById('jumpscare-overlay');
         const deathScreen = document.getElementById('death-screen');
@@ -288,6 +341,7 @@ class Game {
             jumpscare.classList.add('hidden');
             deathScreen.classList.remove('hidden');
             uiContainer.classList.remove('hidden');
+            uiContainer.classList.remove('fade-out');
 
             // Unlock cursor
             document.exitPointerLock();

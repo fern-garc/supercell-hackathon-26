@@ -66,21 +66,8 @@ class FirstPersonControls {
 
         document.addEventListener('pointerlockchange', () => {
             this.isLocked = document.pointerLockElement === this.domElement;
-            const ui = document.getElementById('ui-container');
-            if (ui) {
-                if (this.isLocked) {
-                    ui.classList.add('hidden');
-                    ui.classList.remove('fade-out'); // Reset for next time
-                } else {
-                    ui.classList.remove('hidden');
-                    // We don't want the fade-out class when we return from pause
-                    ui.classList.remove('fade-out');
-                    // Ensure we show the start section (which has controls)
-                    const startSection = document.getElementById('start-section');
-                    const loadingSection = document.getElementById('loading-section');
-                    if (startSection) startSection.classList.remove('hidden');
-                    if (loadingSection) loadingSection.classList.add('hidden');
-                }
+            if (window.gameInstance && window.gameInstance.isGameStarted) {
+                window.gameInstance.togglePause(!this.isLocked);
             }
         });
 

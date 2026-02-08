@@ -172,11 +172,6 @@ class Monster {
         if (this.state === 'chasing') {
             this.speed = this.chaseSpeed;
             this.chase(delta, playerPos);
-
-            // Intense heartbeat during chase
-            if (audioManager && Math.random() < 0.1) {
-                audioManager.playGlobal('heartbeat', 1.0);
-            }
         } else if (dist > this.searchRange) {
             // FAR & UNSEEN: Target the player directly but steadily
             this.state = 'hunting';
@@ -187,12 +182,6 @@ class Monster {
             this.state = 'searching';
             this.speed = this.searchSpeed;
             this.wander(delta);
-
-            // Play heartbeat based on proximity (starts getting louder)
-            if (audioManager && Math.random() < 0.05) {
-                const volume = Math.max(0, 1 - (dist / this.searchRange));
-                audioManager.playGlobal('heartbeat', volume * 0.8);
-            }
         }
 
         // Check for kill

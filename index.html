@@ -4,14 +4,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Haunted Mansion - 3D Game</title>
+    <title>Maze of Monster - 3D Game</title>
     <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
     <div id="ui-container">
         <div id="game-modal">
-            <h1 class="glitch" data-text="HAUNTED MANSION">HAUNTED MANSION</h1>
+            <h1 class="glitch" data-text="Maze of Monster">Maze of Monster</h1>
+            <p class="game-subtitle">Can you find the ritual book, your key to escape?!</p>
 
             <div id="warning-section">
                 <p class="warning-text">⚠️ <strong>PHOTOSENSITIVITY WARNING:</strong> This experience contains flashing
@@ -22,7 +23,7 @@
                 <div class="loader-container">
                     <div class="loader-bar"></div>
                 </div>
-                <p id="loading-text">Preparing the Mansion...</p>
+                <p id="loading-text">Preparing the Ritual...</p>
             </div>
 
             <div id="start-section" class="hidden">
@@ -37,17 +38,25 @@
                 </div>
                 <button id="start-button" class="modal-button primary">ENTER THE VOID</button>
             </div>
+
+            <div id="pause-section" class="hidden">
+                <h2 class="glitch small" data-text="GAME PAUSED">GAME PAUSED</h2>
+                <div id="pause-controls">
+                    <button id="resume-button" class="modal-button primary">RESUME</button>
+                    <button id="restart-button" class="modal-button secondary">RESTART</button>
+                </div>
+            </div>
         </div>
 
         <div id="ending-screen" class="hidden">
             <h1 class="glitch" data-text="ESCAPED">ESCAPED</h1>
-            <p>You have survived the Haunted Mansion.</p>
+            <p>You have found the book and escaped the darkness.</p>
             <button id="replay-button" class="modal-button primary">REPLAY</button>
         </div>
 
         <div id="death-screen" class="hidden">
             <h1 class="glitch" data-text="CLAIMED">CLAIMED</h1>
-            <p>The Mansion has claimed another soul.</p>
+            <p>The darkness has claimed another soul.</p>
             <button id="retry-button" class="modal-button primary">TRY AGAIN</button>
         </div>
     </div>

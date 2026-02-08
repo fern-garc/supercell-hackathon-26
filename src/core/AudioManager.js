@@ -21,13 +21,11 @@ class AudioManager {
 
     async loadAllSounds() {
         const soundsToLoad = [
-            { name: 'atmosphere', url: 'src/soundLibrary/atmosphere.wav' },
             { name: 'flashlight-click', url: 'src/soundLibrary/flashlight-click.wav' },
             { name: 'ghostly-trace', url: 'src/soundLibrary/a-ghostly-trace.wav' },
             { name: 'creeper', url: 'src/soundLibrary/creeper.wav' },
             { name: 'play-game', url: 'src/soundLibrary/do-you-want-to-play.wav' },
             { name: 'whos-there', url: 'src/soundLibrary/whos-there.wav' },
-            { name: 'heartbeat', url: 'src/soundLibrary/heartbeat.wav' },
             { name: 'game-over', url: 'src/soundLibrary/game-of-life-over.wav' },
             { name: 'money', url: 'src/soundLibrary/money.wav' }
         ];

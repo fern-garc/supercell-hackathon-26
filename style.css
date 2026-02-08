@@ -65,11 +65,20 @@ body {
     font-size: 2.5rem;
     color: #8b0000;
     letter-spacing: 5px;
-    margin-bottom: 30px;
+    margin-bottom: 10px;
     position: relative;
     display: block;
     /* Force block to ensure centering via text-align */
     text-transform: uppercase;
+}
+
+.game-subtitle {
+    font-size: 1rem;
+    color: #aaa;
+    margin-bottom: 30px;
+    text-align: center;
+    font-style: italic;
+    letter-spacing: 1px;
 }
 
 .warning-text {
@@ -162,6 +171,37 @@ body {
     background: #b00;
     box-shadow: 0 0 30px rgba(255, 0, 0, 0.4);
     transform: translateY(-2px);
+}
+
+.modal-button.secondary {
+    background: transparent;
+    border: 1px solid #400;
+    color: #8b0000;
+}
+
+.modal-button.secondary:hover {
+    background: rgba(139, 0, 0, 0.1);
+    color: #f00;
+    border-color: #f00;
+}
+
+#pause-section {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px 0;
+}
+
+#pause-controls {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.glitch.small {
+    font-size: 1.8rem;
 }
 
 .hidden {

@@ -7,11 +7,54 @@ class Game {
         this.controls = null;
         this.environment = null;
         this.flashlight = null;
+        this.crystalBall = null;
         this.audio = null;
         this.clock = new THREE.Clock();
+        this.isGameStarted = false;
 
         this.init();
-        this.animate();
+        this.handleLoading();
+    }
+
+    handleLoading() {
+        // Elements
+        const uiContainer = document.getElementById('ui-container');
+        const loaderBar = document.querySelector('.loader-bar');
+        const loadingSection = document.getElementById('loading-section');
+        const startSection = document.getElementById('start-section');
+        const startButton = document.getElementById('start-button');
+
+        // Start simulated loading immediately
+        let progress = 0;
+        const interval = setInterval(() => {
+            progress += Math.random() * 15;
+            if (progress >= 100) {
+                progress = 100;
+                clearInterval(interval);
+
+                // Show the start controls + button
+                setTimeout(() => {
+                    loadingSection.classList.add('hidden');
+                    startSection.classList.remove('hidden');
+                }, 400);
+            }
+            loaderBar.style.width = progress + '%';
+        }, 150);
+
+        // Game Start
+        startButton.addEventListener('click', () => {
+            uiContainer.classList.add('fade-out');
+
+            const wasStarted = this.isGameStarted;
+            this.isGameStarted = true;
+
+            if (!wasStarted) {
+                this.animate();
+            }
+
+            // Auto-lock mouse
+            this.canvas.requestPointerLock();
+        });
     }
 
     init() {
@@ -50,6 +93,10 @@ class Game {
         this.controls.onFlashlightToggle = () => this.flashlight.toggle();
         this.controls.audio = this.audio;
 
+        // Crystal Ball
+        this.crystalBall = new CrystalBall(this.camera);
+        this.controls.onCrystalFlash = () => this.crystalBall.flash();
+
         // Environment
         this.environment = new Environment(this.scene);
         this.controls.collidables = this.environment.collidables;
@@ -80,6 +127,11 @@ class Game {
         if (this.environment) {
             this.environment.update(delta, this.camera.position, this.controls.isJumping);
         }
+
+        // Update items (hand sway, etc)
+        const time = this.clock.getElapsedTime();
+        if (this.flashlight) this.flashlight.update(time, delta);
+        if (this.crystalBall) this.crystalBall.update(time, delta);
 
         // Update controls
         this.controls.update(delta);
